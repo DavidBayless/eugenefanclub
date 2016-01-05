@@ -21,28 +21,7 @@ var knexOptions = {
     database: 'eugenefanclub' //name of database
   }
 };
-var connection = Knex(knexOptions);
 
-function User() {
-  return connection('users');
-}
-
-function registerUser(user, callback) {
-  if (callback) {
-    console.log('I run once!');
-    callback(user, registerUser);
-  } else {
-    User().insert({
-      username: user.username,
-      firstname: user.firstname,
-      lastname: user.lastname,
-      password: user.password
-    })
-    .then(function(res) {
-      console.log('Successfully inserted');
-    });
-  }
-}
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -89,6 +68,45 @@ app.use(function(err, req, res, next) {
   });
 });
 
+var connection = Knex(knexOptions);
+
+function User() {
+  return connection('users');
+}
+
+function registerUser(user, callback) {
+  if (callback) {
+    console.log('I run once!');
+    callback(user, registerUser);
+  } else {
+    User().insert({
+      username: user.username,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      password: user.password
+    })
+    .then(function(res) {
+      console.log('Successfully inserted');
+    });
+  }
+}
+
+function loginUser(user, callback){
+  User().where('username', user.username)
+  .then(function(res) {
+    console.log(res);
+    comparePassword('notverysecure', res, success);
+  });
+}
+
+function success(res, user) {
+  if (res) {
+    console.log('Valid Password');
+  } else {
+    console.log(user.username + ' and password do not match');
+  }
+}
+
 var testUser = {
   username: 'xoEugenexoxo',
   firstname: 'Logan',
@@ -108,15 +126,11 @@ function hashPassword(user, callback) {
 }
 
 function comparePassword(password, user, callback) {
-  bcrypt.compare(password, user.password, function(err, res){
-    if (res === true) {
-      console.log('correct!');
-      callback(true, user);
-    } else {
-      console.log('no-go');
-      callback(false, user);
-    }
+  bcrypt.compare(password, user[0].password, function(err, res){
+    callback(res, user[0]);
   });
 }
-registerUser(testUser, hashPassword);
+
+loginUser(testUser);
+
 module.exports = app;
